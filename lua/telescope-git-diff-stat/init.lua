@@ -130,7 +130,7 @@ function M.git_diff_stat(opts)
 								return added_removed_str .. filepath_str, path_style
 							end,
 							ordinal = relative,
-							value = relative,
+							value = absolute, -- this has to be absolute, as select action could edit wrong file
 							absolute = absolute,
 						}
 					end,
