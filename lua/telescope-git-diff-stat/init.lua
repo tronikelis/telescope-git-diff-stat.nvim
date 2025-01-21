@@ -118,9 +118,9 @@ function M.git_diff_stat(opts)
 
 								local filepath_icon_str, hl_group, icon =
 									utils.transform_devicons(relative, filepath_str)
-								filepath_str = filepath_icon_str
 
 								if hl_group then
+									filepath_str = filepath_icon_str
 									table.insert(
 										path_style,
 										{ { #added_removed_str, #added_removed_str + #icon }, hl_group }
