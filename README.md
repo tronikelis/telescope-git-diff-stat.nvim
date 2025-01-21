@@ -40,7 +40,7 @@ You can pass these into the picker, or set them via `telescope.setup`
 			"-p",
 			unpack(opts.git_args),
 			"--",
-			entry.relative,
+			entry.absolute,
 		}
 	end,
 }

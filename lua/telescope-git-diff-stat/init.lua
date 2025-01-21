@@ -33,7 +33,7 @@ M.ext_config = {
 			"-p",
 			unpack(opts.git_args),
 			"--",
-			entry.relative,
+			entry.absolute,
 		}
 	end,
 	-- todo add cwd here??, but termopen does not support it currently
@@ -129,7 +129,6 @@ function M.git_diff_stat(opts)
 
 								return added_removed_str .. filepath_str, path_style
 							end,
-							relative = relative,
 							ordinal = relative,
 							value = absolute, -- this has to be absolute, as select action could edit wrong file
 							absolute = absolute,
