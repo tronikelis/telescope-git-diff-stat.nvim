@@ -32,13 +32,13 @@ You can pass these into the picker, or set them via `telescope.setup`
 {
 	-- extra git args, usually first arg will be git rev
 	git_args = {},
-	-- passed to previewers.new_termopen_previewer
+	-- passed to previewers.new_termopen_previewer, will be flattened
 	preview_get_command = function(opts, entry)
 		return {
 			"git",
 			"diff",
 			"-p",
-			unpack(opts.git_args),
+			opts.git_args,
 			"--",
 			entry.absolute,
 		}

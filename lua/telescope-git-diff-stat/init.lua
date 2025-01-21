@@ -5,33 +5,20 @@ local previewers = require("telescope.previewers")
 
 local M = {}
 
-local function clean_list(tbl)
-	local keys = vim.tbl_keys(tbl)
-	table.sort(keys, function(a, b)
-		return a < b
-	end)
-
-	local clean = {}
-	for _, k in ipairs(keys) do
-		local x = tbl[k]
-		if x and x ~= "" then
-			table.insert(clean, x)
-		end
-	end
-
-	return clean
+local function flatten(tbl)
+	return vim.iter(tbl):flatten(math.huge):totable()
 end
 
 M.ext_config = {
 	-- extra git args, usually first arg will be git rev
 	git_args = {},
-	-- passed to previewers.new_termopen_previewer
+	-- passed to previewers.new_termopen_previewer, will be flattened
 	preview_get_command = function(opts, entry)
 		return {
 			"git",
 			"diff",
 			"-p",
-			unpack(opts.git_args),
+			opts.git_args,
 			"--",
 			entry.absolute,
 		}
@@ -59,7 +46,7 @@ end
 
 ---@return boolean
 local function assert_diff_exists(git_args)
-	local out = vim.system(clean_list({ "git", "diff", "--exit-code", "--quiet", unpack(git_args) })):wait()
+	local out = vim.system(flatten({ "git", "diff", "--exit-code", "--quiet", git_args })):wait()
 	if out.code == 0 then
 		print("No diff")
 		return false
@@ -84,14 +71,14 @@ function M.git_diff_stat(opts)
 		.new(opts, {
 			prompt_title = "git diff " .. table.concat(opts.git_args, " "),
 			finder = finders.new_oneshot_job(
-				clean_list({
+				flatten({
 					"git",
 					"--no-pager",
 					"diff",
 					"--numstat",
 					"--no-color",
 					"--no-ext-diff",
-					unpack(opts.git_args),
+					opts.git_args,
 				}),
 				{
 					entry_maker = function(entry)
@@ -140,7 +127,7 @@ function M.git_diff_stat(opts)
 			previewer = previewers.new_termopen_previewer({
 				title = "Diff",
 				get_command = function(entry)
-					return clean_list(opts.preview_get_command(opts, entry))
+					return flatten(opts.preview_get_command(opts, entry))
 				end,
 			}),
 		})
