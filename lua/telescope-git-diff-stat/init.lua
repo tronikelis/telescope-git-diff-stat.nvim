@@ -6,7 +6,7 @@ local previewers = require("telescope.previewers")
 local M = {}
 
 local function flatten(tbl)
-	return vim.iter(tbl):flatten(math.huge):totable()
+	return vim.iter(tbl):flatten():totable()
 end
 
 M.ext_config = {
