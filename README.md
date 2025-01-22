@@ -4,6 +4,13 @@ Like git status, but better
 
 ![Image](https://github.com/user-attachments/assets/19e9deae-4cc9-4681-89cc-93a3d76947fd)
 
+<!--toc:start-->
+- [telescope git diff stat picker](#telescope-git-diff-stat-picker)
+    - [GitDiffStat user command](#gitdiffstat-user-command)
+    - [Config](#config)
+    - [Requirements](#requirements)
+<!--toc:end-->
+
 Quick setup
 
 ```lua
@@ -45,3 +52,10 @@ You can pass these into the picker, or set them via `telescope.setup`
 	end,
 }
 ```
+
+### Requirements
+
+- bash
+- git
+- awk
+- wc
