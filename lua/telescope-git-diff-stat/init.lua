@@ -110,7 +110,6 @@ function M.git_diff_stat(opts)
 					"--no-renames",
 					"--numstat",
 					"--no-color",
-					"--no-ext-diff",
 					opts.git_args,
 				}),
 				{
