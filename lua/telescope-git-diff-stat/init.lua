@@ -58,6 +58,35 @@ local function assert_diff_exists(git_args)
 	return true
 end
 
+local function flatten_shell_args(args)
+	args = flatten(args)
+
+	return table.concat(
+		vim.iter(args)
+			:map(function(x)
+				return vim.fn.shellescape(x)
+			end)
+			:totable(),
+		" "
+	)
+end
+
+---@param git_args table
+---@param column integer
+local function get_longest_line_git_diff(git_args, column)
+	local out = vim.system({
+		"bash",
+		"-c",
+		string.format([[git diff --numstat %s | awk '{print $%d}' | wc -L]], flatten_shell_args(git_args), column),
+	}, { text = true }):wait()
+
+	if not out.stdout or out.stdout == "" then
+		return 1
+	end
+
+	return tonumber(vim.trim(out.stdout))
+end
+
 function M.git_diff_stat(opts)
 	opts = vim.tbl_deep_extend("force", M.ext_config, opts or {})
 
@@ -67,6 +96,9 @@ function M.git_diff_stat(opts)
 		return
 	end
 
+	local max_added_len = get_longest_line_git_diff(opts.git_args, 1)
+	local max_removed_len = get_longest_line_git_diff(opts.git_args, 2)
+
 	pickers
 		.new(opts, {
 			prompt_title = "git diff " .. table.concat(opts.git_args, " "),
@@ -75,6 +107,7 @@ function M.git_diff_stat(opts)
 					"git",
 					"--no-pager",
 					"diff",
+					"--no-renames",
 					"--numstat",
 					"--no-color",
 					"--no-ext-diff",
@@ -92,8 +125,10 @@ function M.git_diff_stat(opts)
 
 						return {
 							display = function()
-								local added_str = string.format("%3d ", added)
-								local removed_str = string.format("%3d", removed)
+								local added_str = "%" .. tostring(max_added_len) .. "d "
+								local removed_str = "%" .. tostring(max_removed_len) .. "d"
+								added_str = string.format(added_str, added)
+								removed_str = string.format(removed_str, removed)
 
 								local added_removed_str = string.format("%s%s  ", added_str, removed_str)
 								local filepath_str = utils.transform_path(opts, relative)
@@ -116,6 +151,7 @@ function M.git_diff_stat(opts)
 
 								return added_removed_str .. filepath_str, path_style
 							end,
+
 							ordinal = relative,
 							value = absolute, -- this has to be absolute, as select action could edit wrong file
 							absolute = absolute,
