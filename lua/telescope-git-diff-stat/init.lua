@@ -71,13 +71,13 @@ local function flatten_shell_args(args)
 	)
 end
 
----@param git_args table
+---@param git_command table
 ---@param column integer
-local function get_longest_line_git_diff(git_args, column)
+local function get_longest_line_git_diff(git_command, column)
 	local out = vim.system({
 		"bash",
 		"-c",
-		string.format([[git diff --numstat %s | awk '{print $%d}' | wc -L]], flatten_shell_args(git_args), column),
+		string.format([[%s | awk '{print $%d}' | wc -L]], flatten_shell_args(git_command), column),
 	}, { text = true }):wait()
 
 	if not out.stdout or out.stdout == "" then
@@ -96,68 +96,66 @@ function M.git_diff_stat(opts)
 		return
 	end
 
-	local max_added_len = get_longest_line_git_diff(opts.git_args, 1)
-	local max_removed_len = get_longest_line_git_diff(opts.git_args, 2)
+	local git_command = {
+		"git",
+		"--no-pager",
+		"diff",
+		"--no-renames",
+		"--numstat",
+		"--no-color",
+		opts.git_args,
+	}
+
+	local max_added_len = get_longest_line_git_diff(git_command, 1)
+	local max_removed_len = get_longest_line_git_diff(git_command, 2)
 
 	pickers
 		.new(opts, {
 			prompt_title = "git diff " .. table.concat(opts.git_args, " "),
-			finder = finders.new_oneshot_job(
-				flatten({
-					"git",
-					"--no-pager",
-					"diff",
-					"--no-renames",
-					"--numstat",
-					"--no-color",
-					opts.git_args,
-				}),
-				{
-					entry_maker = function(entry)
-						local utils = require("telescope.utils")
+			finder = finders.new_oneshot_job(flatten(git_command), {
+				entry_maker = function(entry)
+					local utils = require("telescope.utils")
 
-						local added, removed, relative = entry:match(".-(%d+).-(%d+).-(%S.*)")
-						added = added or 0
-						removed = removed or 0
+					local added, removed, relative = entry:match(".-(%d+).-(%d+).-(%S.*)")
+					added = added or 0
+					removed = removed or 0
 
-						local absolute = vim.fs.joinpath(git_root, relative)
+					local absolute = vim.fs.joinpath(git_root, relative)
 
-						return {
-							display = function()
-								local added_str = "%" .. tostring(max_added_len) .. "d "
-								local removed_str = "%" .. tostring(max_removed_len) .. "d"
-								added_str = string.format(added_str, added)
-								removed_str = string.format(removed_str, removed)
+					return {
+						display = function()
+							local added_str = "%" .. tostring(max_added_len) .. "d "
+							local removed_str = "%" .. tostring(max_removed_len) .. "d"
+							added_str = string.format(added_str, added)
+							removed_str = string.format(removed_str, removed)
 
-								local added_removed_str = string.format("%s%s  ", added_str, removed_str)
-								local filepath_str = utils.transform_path(opts, relative)
+							local added_removed_str = string.format("%s%s  ", added_str, removed_str)
+							local filepath_str = utils.transform_path(opts, relative)
 
-								local path_style = {
-									{ { 0, #added_str }, "Added" },
-									{ { #added_str, #added_str + #removed_str }, "Removed" },
-								}
+							local path_style = {
+								{ { 0, #added_str }, "Added" },
+								{ { #added_str, #added_str + #removed_str }, "Removed" },
+							}
 
-								local filepath_icon_str, hl_group, icon =
-									utils.transform_devicons(relative, filepath_str)
+							local filepath_icon_str, hl_group, icon = utils.transform_devicons(relative, filepath_str)
 
-								if hl_group then
-									filepath_str = filepath_icon_str
-									table.insert(
-										path_style,
-										{ { #added_removed_str, #added_removed_str + #icon }, hl_group }
-									)
-								end
+							if hl_group then
+								filepath_str = filepath_icon_str
+								table.insert(
+									path_style,
+									{ { #added_removed_str, #added_removed_str + #icon }, hl_group }
+								)
+							end
 
-								return added_removed_str .. filepath_str, path_style
-							end,
+							return added_removed_str .. filepath_str, path_style
+						end,
 
-							ordinal = relative,
-							value = absolute, -- this has to be absolute, as select action could edit wrong file
-							absolute = absolute,
-						}
-					end,
-				}
-			),
+						ordinal = relative,
+						value = absolute, -- this has to be absolute, as select action could edit wrong file
+						absolute = absolute,
+					}
+				end,
+			}),
 			sorter = conf.file_sorter(opts),
 			previewer = previewers.new_termopen_previewer({
 				title = "Diff",
